@@ -1,0 +1,55 @@
+from pathlib import Path
+import pandas as pd
+
+BASE_DIR = Path(__file__).resolve().parent
+EXCEL_FILE = BASE_DIR / "4 Incubator temperature and incubator humidity infant.xlsx"
+
+# حدود الحرارة والرطوبة حسب كلامك
+TEMP_MIN = 36.5
+TEMP_MAX = 37.5  # حول درجة 37°C
+HUM_MIN = 40.0
+HUM_MAX = 60.0
+
+
+def check_environment(temp_c: float, hum_pct: float) -> list[str]:
+  alerts = []
+
+  if temp_c < TEMP_MIN:
+    alerts.append(f"الحرارة أقل من المطلوب ({temp_c:.1f}°C)")
+  elif temp_c > TEMP_MAX:
+    alerts.append(f"الحرارة أعلى من المطلوب ({temp_c:.1f}°C)")
+
+  if hum_pct < HUM_MIN:
+    alerts.append(f"الرطوبة أقل من 40% ({hum_pct:.1f}%)")
+  elif hum_pct > HUM_MAX:
+    alerts.append(f"الرطوبة أعلى من 60% ({hum_pct:.1f}%)")
+
+  if not alerts:
+    alerts.append("الحرارة والرطوبة في النطاق المطلوب.")
+  return alerts
+
+
+def show_reading(row_index: int = 0, hour: int = 4) -> None:
+  # أول 96 صف فقط هم حالات الدراسة، والباقي شروحات في آخر الشيت
+  df_temp = pd.read_excel(
+      EXCEL_FILE, sheet_name="Incubator temperature infant "
+  ).iloc[:96]
+  df_hum = pd.read_excel(
+      EXCEL_FILE, sheet_name="Incubator humidity infant"
+  ).iloc[:96]
+
+  temp_col = f"Incubator temperature {hour}h"
+  hum_col = f"Incubator humidity {hour}h"
+
+  temp_val = float(df_temp.iloc[row_index][temp_col])
+  hum_val = float(df_hum.iloc[row_index][hum_col])
+  study_id = df_temp.iloc[row_index]["Study ID"]
+
+  print(f"الحالة رقم: {study_id} | الساعة: {hour}h")
+  print(f"الحرارة: {temp_val:.1f}°C | الرطوبة: {hum_val:.1f}%")
+  for msg in check_environment(temp_val, hum_val):
+    print("->", msg)
+
+
+if __name__ == "__main__":
+  show_reading(row_index=0, hour=4)
